@@ -1,10 +1,12 @@
-from flask import Flask, render_template
+from flask import render_template
 
-app = Flask(__name__)
+from cs23it01saleapp.saleappv2.eapp import app, dao
+
 
 @app.route('/')
 def index():
-    return render_template('index.html', msg="Welcome to App")
+    return render_template('index.html', categories=dao.get_categories(), products=dao.get_products())
+
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
