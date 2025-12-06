@@ -1,8 +1,13 @@
-from cs23it01saleapp.saleappv2.eapp.models import Category, Product
+from saleappv2.eapp.models import Category, Product, User
+from saleappv2.eapp import app, db
+import hashlib
+import cloudinary.uploader
+
 
 def get_categories():
     return Category.query.all()
-def get_products(kw=None, category_id=None):
+
+def get_products(kw=None, category_id=None, page=1):
     products = Product.query
 
     if category_id:
@@ -11,4 +16,37 @@ def get_products(kw=None, category_id=None):
     if kw:
         products = products.filter(Product.name.contains(kw))
 
+    if page:
+        page = int(page)
+        page_size =  app.config.get('PAGE_SIZE', 6)
+        start = (page - 1) * page_size
+        products = products.slice(start, start + page_size)
+
     return products.all()
+
+
+def count_products():
+    return Product.query.count()
+
+
+def get_user_by_id(id):
+    return User.query.get(id)
+
+
+def auth_user(username, password):
+    password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
+    return User.query.filter(User.username==username.strip(),
+                             User.password==password).first()
+
+
+def add_user(name, username, password, avatar):
+    u = User(name=name,
+             username=username.strip(),
+             password=str(hashlib.md5(password.strip().encode('utf-8')).hexdigest()))
+
+    if avatar:
+        res = cloudinary.uploader.upload(avatar)
+        u.avatar = res.get('secure_url')
+
+    db.session.add(u)
+    db.session.commit()
